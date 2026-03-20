@@ -1,2 +1,2 @@
-# Mini-Java-HTTP-server
+# Mini-HTTP-server
 A high performance java http server.
