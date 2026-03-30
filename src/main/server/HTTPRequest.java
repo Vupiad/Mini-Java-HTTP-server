@@ -1,32 +1,44 @@
 package src.main.server;
 
-import java.util.HashMap;
+import java.io.InputStream;
 import java.util.Map;
+import src.main.server.utils.CaseInsensitiveMap;
 
 public class HTTPRequest {
-    private String method;
-    private String path;
+    private final String method;
+    private final String path;
     private String version;
-    private final Map<String, String> headers = new HashMap<>();
-    private byte[] body;
 
-    // Getters and Setters
-    public String getMethod() { return method; }
-    public void setMethod(String method) { this.method = method; }
+    private InputStream bodyStream;// The "Lazy" handle
+    private final Map<String, String> headers = new CaseInsensitiveMap();
 
-    public String getPath() { return path; }
-    public void setPath(String path) { this.path = path; }
-
-    public void addHeader(String key, String value) {
-        headers.put(key.trim(), value.trim());
+    public HTTPRequest(String method, String path, Map<String, String> headers, InputStream bodyStream) {
+        this.method = method;
+        this.path = path;
+        this.bodyStream = bodyStream;
     }
 
-    public String getHeader(String key) {
-        return headers.get(key);
+    public HTTPRequest(String method, String path, String version){
+        this.method = method;
+        this.path = path;
+        this.version = version;
     }
 
-    public boolean hasBody() {
-        return headers.containsKey("Content-Length") ||
-                "chunked".equalsIgnoreCase(headers.get("Transfer-Encoding"));
+
+
+    // The Handler calls this only if it needs the data
+    public InputStream getBodyStream() {
+        return bodyStream;
+    }
+    public void setInputStream(InputStream inputStream){
+        this.bodyStream = inputStream;
+    }
+
+    public void addHeader(String key, String value){
+        this.headers.putIfAbsent(key, value);
+    }
+
+    public String getHeader(String key){
+        return this.headers.getOrDefault(key, "");
     }
 }
