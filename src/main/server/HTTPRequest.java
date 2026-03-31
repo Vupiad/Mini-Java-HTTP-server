@@ -8,6 +8,7 @@ public class HTTPRequest {
     private final String method;
     private final String path;
     private String version;
+    private String ipAddress;
 
     private InputStream bodyStream;// The "Lazy" handle
     private final Map<String, String> headers = new CaseInsensitiveMap();
@@ -24,8 +25,6 @@ public class HTTPRequest {
         this.version = version;
     }
 
-
-
     // The Handler calls this only if it needs the data
     public InputStream getBodyStream() {
         return bodyStream;
@@ -40,5 +39,12 @@ public class HTTPRequest {
 
     public String getHeader(String key){
         return this.headers.getOrDefault(key, "");
+    }
+
+    public String getIpAddress(){
+        return this.ipAddress;
+    }
+    public void setIpAddress(String ipAddress){
+        this.ipAddress = ipAddress;
     }
 }
