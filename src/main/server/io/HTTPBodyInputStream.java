@@ -4,6 +4,7 @@ import java.io.InputStream;
 
 public class HTTPBodyInputStream extends InputStream {
     private final InputStream delegate;
+
     private long remaining;
 
     public HTTPBodyInputStream(InputStream delegate, long contentLength) {
