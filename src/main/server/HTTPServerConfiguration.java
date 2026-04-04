@@ -8,7 +8,8 @@ public class HTTPServerConfiguration implements Configurable<HTTPServerConfigura
     private List<HTTPListenerConfiguration> listeners = new ArrayList<>();
     private Path baseDir = Path.of("");
     private HTTPHandler httpHandler;
-    private int maximumPendingSocketConnection;
+    private int maximumPendingSocketConnection = 250;
+    private int keepAliveTimeout = 20;
     @Override
     public HTTPServerConfiguration configuration(){
         return this;
@@ -28,12 +29,19 @@ public class HTTPServerConfiguration implements Configurable<HTTPServerConfigura
         this.httpHandler = handler;
         return this;
     }
+    public HTTPServerConfiguration withKeepAliveTimeout(int keepAliveTimeout){
+        this.keepAliveTimeout = keepAliveTimeout;
+        return this;
+    }
+
     @Override
     public HTTPServerConfiguration withMaximumPendingSocketConnection(int maximumPendingSocketConnection){
         this.maximumPendingSocketConnection = maximumPendingSocketConnection;
         return this;
     }
-
+    public int getKeepAliveTimeout(){
+        return this.keepAliveTimeout;
+    }
     public List<HTTPListenerConfiguration> getListeners(){
         return this.listeners;
     }
@@ -41,7 +49,7 @@ public class HTTPServerConfiguration implements Configurable<HTTPServerConfigura
     public Path getBaseDir(){
         return this.baseDir;
     }
-    public HTTPHandler getHttpHandler(){
+    public HTTPHandler getHandler(){
         return this.httpHandler;
     }
     public int getMaximumPendingSocketConnection(){

@@ -1,90 +1,114 @@
 package src.main.server;
 
-import src.main.server.io.HTTPBodyInputStream;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PushbackInputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.Objects;
 
+public class HTTP11Parser {
 
-public class HTTP11Parser implements HTTPparser{
-    private static final int MAX_HEADER_SIZE = 8192;
-    public HTTPRequest parse(InputStream inputStream) throws IOException {
-        PushbackInputStream pushbackIn = new PushbackInputStream(inputStream, MAX_HEADER_SIZE);
+    /**
+     * Parses the HTTP request preamble (request line and headers).
+     * This parser is "pure" - it only reads bytes and populates the request object.
+     */
+    public static void parse(PushbackInputStream pushbackIn, byte[] buffer, HTTPRequest request) throws IOException {
+        // 1. Read raw bytes into the buffer until we hit the \r\n\r\n boundary
+        int totalRead = readPreamble(pushbackIn, buffer);
 
-        byte[] buffer = new byte[MAX_HEADER_SIZE];
+        // 2. Locate the exact index where headers end
+        int separatorIndex = findHeaderEnd(buffer, totalRead);
+        if (separatorIndex == -1) {
+            throw new IOException("Header block is too large for the provided buffer or malformed.");
+        }
+
+        // 3. If we read past the headers into the body, push those bytes back
+        handleBodyPushback(pushbackIn, buffer, totalRead, separatorIndex);
+
+        // 4. Extract text from the buffer and populate the HTTPRequest
+        populateRequest(request, buffer, separatorIndex);
+    }
+
+    private static int readPreamble(InputStream in, byte[] buffer) throws IOException {
         int totalRead = 0;
-        int separatorIndex = -1;
+        int max = buffer.length;
 
-        while(totalRead < MAX_HEADER_SIZE){
-            int read = pushbackIn.read(buffer, totalRead, MAX_HEADER_SIZE - totalRead);
-            if(read == -1) return null;
+        while (totalRead < max) {
+            int read = in.read(buffer, totalRead, max - totalRead);
+            if (read == -1) {
+                if (totalRead == 0) {
+                    throw new IOException("Client closed connection before sending data.");
+                }
+                break; // Client sent some data then closed, process what we have
+            }
 
             totalRead += read;
 
-            separatorIndex = findHeaderEnd(buffer, totalRead);
-            if(separatorIndex != -1){
-                break;
+            // Stop reading from the socket as soon as we have the full header block
+            if (findHeaderEnd(buffer, totalRead) != -1) {
+                return totalRead;
             }
         }
-        if(separatorIndex == -1){
-            throw new IOException("header block is too large");
+
+        if (totalRead == max && findHeaderEnd(buffer, totalRead) == -1) {
+            throw new IOException("Headers exceeded maximum buffer size.");
         }
 
-        //push back data if we over read it
-        int bodyBytesInScanner = totalRead - (separatorIndex + 4);
-
-        if(bodyBytesInScanner > 0){
-            pushbackIn.unread(buffer, separatorIndex + 4, bodyBytesInScanner);
-        }
-
-        HTTPRequest request = parseHeaderHeaders(buffer, 0, separatorIndex);
-
-        InputStream bodyStream = pushbackIn;
-        String contentLength = request.getHeader("content-length");
-        if(!Objects.equals(contentLength, "")){
-            bodyStream = new HTTPBodyInputStream(bodyStream, Long.parseLong(contentLength));
-        }
-
-        request.setInputStream(bodyStream);
-        return request;
+        return totalRead;
     }
 
+    private static void handleBodyPushback(PushbackInputStream in, byte[] buffer, int totalRead, int separatorIndex) throws IOException {
+        // The separator is \r\n\r\n, which is 4 bytes long.
+        // Anything after separatorIndex + 4 belongs to the body.
+        int bodyBytesInScanner = totalRead - (separatorIndex + 4);
+        if (bodyBytesInScanner > 0) {
+            in.unread(buffer, separatorIndex + 4, bodyBytesInScanner);
+        }
+    }
 
-    private HTTPRequest parseHeaderHeaders(byte[] buffer, int offset, int length){
-        int lineEnd = findLineEnd(buffer, offset, length);
-        String requestLine = new String(buffer, offset, lineEnd - offset, StandardCharsets.UTF_8);
+    private static void populateRequest(HTTPRequest request, byte[] buffer, int length) throws IOException {
+        // 1. Parse the Request Line
+        int lineEnd = findLineEnd(buffer, 0, length);
+        String requestLine = new String(buffer, 0, lineEnd, StandardCharsets.UTF_8);
 
         String[] parts = requestLine.split(" ");
-        HTTPRequest request = new HTTPRequest(parts[0], parts[1], parts[2]);
+        if (parts.length >= 3) {
+            // Safely convert string to Enum
+            try {
+                request.setMethod(HTTPRequest.Method.valueOf(parts[0].toUpperCase()));
+            } catch (IllegalArgumentException e) {
+                throw new IOException("Unsupported or malformed HTTP method: " + parts[0]);
+            }
 
-        // 2. Parse the rest of the headers
-        int currentPos = lineEnd + 2; // Skip the \r\n
-        while (currentPos < length) {
-            int nextLineEnd = findLineEnd(buffer, currentPos, length);
-            if (nextLineEnd == currentPos) break; // Found the empty line
-
-            // Extract key and value directly from the byte buffer
-            parseSingleHeader(request, buffer, currentPos, nextLineEnd);
-
-            currentPos = nextLineEnd + 2; // Move to next line
+            request.setPath(parts[1]);
+            request.setVersion(parts[2]);
+        } else {
+            throw new IOException("Malformed request line: " + requestLine);
         }
 
-        return request;
+        // 2. Parse the Headers
+        int currentPos = lineEnd + 2;
+        while (currentPos < length) {
+            int nextLineEnd = findLineEnd(buffer, currentPos, length);
+
+            if (nextLineEnd == currentPos) {
+                break;
+            }
+
+            parseSingleHeader(request, buffer, currentPos, nextLineEnd);
+            currentPos = nextLineEnd + 2;
+        }
     }
 
-    private int findHeaderEnd(byte[] buf, int length) {
+    private static int findHeaderEnd(byte[] buf, int length) {
         for (int i = 0; i < length - 3; i++) {
-            if (buf[i] == '\r' && buf[i+1] == '\n' &&
-                    buf[i+2] == '\r' && buf[i+3] == '\n') {
+            if (buf[i] == '\r' && buf[i+1] == '\n' && buf[i+2] == '\r' && buf[i+3] == '\n') {
                 return i;
             }
         }
         return -1;
     }
-    private int findLineEnd(byte[] buffer, int start, int end) {
+
+    private static int findLineEnd(byte[] buffer, int start, int end) {
         for (int i = start; i < end - 1; i++) {
             if (buffer[i] == '\r' && buffer[i+1] == '\n') {
                 return i;
@@ -92,8 +116,8 @@ public class HTTP11Parser implements HTTPparser{
         }
         return end;
     }
-    private void parseSingleHeader(HTTPRequest request, byte[] buffer, int start, int end) {
-        // 1. Find the colon separator within this specific line
+
+    private static void parseSingleHeader(HTTPRequest request, byte[] buffer, int start, int end) {
         int colonPos = -1;
         for (int i = start; i < end; i++) {
             if (buffer[i] == ':') {
@@ -102,20 +126,11 @@ public class HTTP11Parser implements HTTPparser{
             }
         }
 
-        if (colonPos == -1) {
-            return; // Malformed header line, skip it
+        // If there's no colon, it's a malformed header, so we skip it
+        if (colonPos != -1) {
+            String key = new String(buffer, start, colonPos - start, StandardCharsets.UTF_8).trim();
+            String value = new String(buffer, colonPos + 1, end - (colonPos + 1), StandardCharsets.UTF_8).trim();
+            request.addHeader(key, value);
         }
-
-        // 2. Extract Key (trimmed)
-        // We convert only this small slice to a String
-        String key = new String(buffer, start, colonPos - start, StandardCharsets.UTF_8).trim();
-
-        // 3. Extract Value (trimmed)
-        // The value starts after the colon
-        int valueStart = colonPos + 1;
-        String value = new String(buffer, valueStart, end - valueStart, StandardCharsets.UTF_8).trim();
-
-        // 4. Add to the Case-Insensitive Map in your Request object
-        request.addHeader(key, value);
     }
 }

@@ -2,6 +2,7 @@ package src.main.server;
 
 import java.nio.file.Path;
 
+
 public interface Configurable<T extends Configurable<T>> {
     HTTPServerConfiguration configuration();
 
