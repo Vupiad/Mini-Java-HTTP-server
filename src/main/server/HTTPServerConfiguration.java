@@ -8,7 +8,7 @@ public class HTTPServerConfiguration implements Configurable<HTTPServerConfigura
     private List<HTTPListenerConfiguration> listeners = new ArrayList<>();
     private Path baseDir = Path.of("");
     private HTTPHandler httpHandler;
-    private int maximumPendingSocketConnection = 250;
+    private int maximumPendingSocketConnection = 500;
     private int keepAliveTimeout = 20;
     @Override
     public HTTPServerConfiguration configuration(){

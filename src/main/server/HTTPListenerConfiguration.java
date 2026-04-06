@@ -10,11 +10,12 @@ public class HTTPListenerConfiguration {
     private final int port;
 //    private final Certificate[] certificatesChain;
 //    private final PrivateKey privateKey;
-//    private final boolean tls;
+    private boolean tls;
 
     public HTTPListenerConfiguration(InetAddress bindAddress, int port) {
         this.bindAddress = bindAddress;
         this.port = port;
+        this.tls = false;
     }
 
     // Convenience constructor: Defaults to "0.0.0.0" (All interfaces)
@@ -35,6 +36,10 @@ public class HTTPListenerConfiguration {
 
     public int getPort() {
         return port;
+    }
+
+    public boolean isTLS(){
+        return this.tls;
     }
 
 

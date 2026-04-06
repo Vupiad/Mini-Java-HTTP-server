@@ -5,7 +5,7 @@ import java.io.InputStream;
 import java.io.PushbackInputStream;
 import java.nio.charset.StandardCharsets;
 
-public class HTTP11Parser {
+public class HTTPParser {
 
     /**
      * Parses the HTTP request preamble (request line and headers).

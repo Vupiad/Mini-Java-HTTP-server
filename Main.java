@@ -7,11 +7,11 @@ public class Main {
         HTTPHandler handler = (request, response) ->{
             String name = request.getURI().substring(1); // e.g., /Vu -> Vu
             if (name.isEmpty()) name = "Guest";
-
+            String html = "<h1>Chào " + name + "!</h1>";
             response.setContentType("text/html; charset=utf-8");
+            response.setHeader("content-length", String.valueOf(html.length()));
             var writer = response.getWriter();
-            writer.write("<h1>Chào " + name + "!</h1>");
-            writer.write("<p>Your IP: " + request.getIpAddress() + "</p>");
+            writer.write(html);
         };
 
         try (HTTPServer server = new HTTPServer().withHandler(handler).withListener(new HTTPListenerConfiguration(8080))){

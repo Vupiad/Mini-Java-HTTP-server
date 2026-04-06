@@ -1,11 +1,8 @@
 package src.main.server.internal;
 
-import src.main.server.HTTPServerConfiguration;
+import src.main.server.*;
 import src.main.server.io.HTTPInputStream;
 import src.main.server.io.HTTPOutputStream;
-import src.main.server.HTTPRequest;
-import src.main.server.HTTPResponse;
-import src.main.server.HTTP11Parser;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -18,36 +15,34 @@ import java.util.List;
 public class HTTPWorkerThread implements Runnable {
     private final Socket socket;
     private final HTTPServerConfiguration config;
+    private final HTTPListenerConfiguration listener;
     private volatile State state = State.Read;
-
+    private final PushbackInputStream inputStream;
     public enum State { Read, Process, Write, KeepAlive }
 
-    public HTTPWorkerThread(Socket socket, HTTPServerConfiguration config) {
+    public HTTPWorkerThread(Socket socket, HTTPServerConfiguration config, HTTPListenerConfiguration listener) throws IOException{
         this.socket = socket;
         this.config = config;
+        this.listener = listener;
+        this.inputStream = new PushbackInputStream(socket.getInputStream());
     }
 
     @Override
     public void run() {
         // 1. Allocate Reusable Resources ONCE per connection
         byte[] headerBuffer = new byte[8192];
+        HTTPInputStream httpInputStream;
+        HTTPRequest request = null;
+        HTTPResponse response = null;
+        try {
 
-        try (socket;
-             PushbackInputStream pbis = new PushbackInputStream(socket.getInputStream(), headerBuffer.length);
-             OutputStream rawOut = socket.getOutputStream()) {
-
-            String ip = socket.getInetAddress().getHostAddress();
-            int port = socket.getLocalPort();
-            String scheme = "http"; // You can update this later for TLS/HTTPS
-
-            // 2. The Keep-Alive Loop
             while (true) {
                 state = State.Read;
-                HTTPRequest request = new HTTPRequest(scheme, port, ip);
+                request = new HTTPRequest(listener.isTLS() ? "https" : "http" , listener.getPort(), socket.getInetAddress().getHostAddress());
 
                 try {
                     // Parser fills the request object but does not wrap streams
-                    HTTP11Parser.parse(pbis, headerBuffer, request);
+                    HTTPParser.parse(inputStream, headerBuffer, request);
                 } catch (IOException e) {
                     // Either the client closed the connection naturally, or sent bad headers.
                     break;
@@ -55,11 +50,11 @@ public class HTTPWorkerThread implements Runnable {
 
                 // 3. Worker orchestrates the streams
                 long contentLength = parseContentLength(request);
-                HTTPInputStream bodyStream = new HTTPInputStream(pbis, contentLength);
+                HTTPInputStream bodyStream = new HTTPInputStream(inputStream, contentLength);
                 request.setBodyStream(bodyStream);
 
-                HTTPResponse response = new HTTPResponse();
-                HTTPOutputStream hos = new HTTPOutputStream(rawOut, response);
+                response = new HTTPResponse();
+                HTTPOutputStream hos = new HTTPOutputStream(socket.getOutputStream(), response);
                 response.setOutputStream(hos);
 
                 // 4. Pass control to your Business Logic (Handler)

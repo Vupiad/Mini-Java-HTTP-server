@@ -68,7 +68,7 @@ public class HTTPOutputStream extends OutputStream {
     @Override
     public void close() throws IOException {
         commit(); // If they closed without writing a body (e.g., a 204 No Content)
-        rawSocketOut.close();
+        rawSocketOut.flush();
     }
 
 }

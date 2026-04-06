@@ -82,14 +82,14 @@ public class HTTPRequest {
     }
 
     public void addHeader(String name, String value) {
-        this.headers.computeIfAbsent(name, k -> new ArrayList<>()).add(value);
+        this.headers.computeIfAbsent(name.toLowerCase(), k -> new ArrayList<>()).add(value);
     }
     public List<String> getHeaders(String key) {
         // 1. Guard against null keys to prevent NullPointerException
         if (key == null || key.isBlank()) {
             return List.of();
         }
-        return headers.getOrDefault(key.toLowerCase(Locale.ROOT), List.of());
+        return headers.getOrDefault(key.toLowerCase(), List.of());
     }
 
     public String getHeader(String name) {

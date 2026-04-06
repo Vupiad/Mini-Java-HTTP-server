@@ -42,9 +42,10 @@ public class HTTPServerThread extends Thread {
 
                 // 3. Hand off to a Worker using a Virtual Thread
                 // This is where the magic happens - it's non-blocking for this thread!
+                HTTPWorkerThread worker = new HTTPWorkerThread(clientSocket, configuration, listener);
                 Thread.ofVirtual()
                         .name("http-worker-", 0)
-                        .start(new HTTPWorkerThread(clientSocket, configuration));
+                        .start(worker);
 
             } catch (SocketException e) {
                 if (!running) {
