@@ -4,8 +4,6 @@ import java.io.InputStream;
 import java.net.URI;
 import java.util.*;
 
-import src.main.server.utils.CaseInsensitiveMap;
-
 public class HTTPRequest {
     public enum Method { GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS, TRACE }
 
@@ -105,8 +103,12 @@ public class HTTPRequest {
 
 
     public boolean hasBody() {
-        String cl = getHeaders("content-length").get(0);
-        String te = getHeaders("transfer-encoding").get(0);
+        List<String> clHeaders = getHeaders("content-length");
+        List<String> teHeaders = getHeaders("transfer-encoding");
+        
+        String cl = !clHeaders.isEmpty() ? clHeaders.get(0) : null;
+        String te = !teHeaders.isEmpty() ? teHeaders.get(0) : null;
+        
         return (cl != null && Long.parseLong(cl) > 0) || te != null;
     }
 

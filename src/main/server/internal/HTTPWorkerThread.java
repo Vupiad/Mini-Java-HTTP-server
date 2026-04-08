@@ -50,9 +50,11 @@ public class HTTPWorkerThread implements Runnable {
 
                 // 3. Worker orchestrates the streams
                 long contentLength = parseContentLength(request);
-                HTTPInputStream bodyStream = new HTTPInputStream(inputStream, contentLength);
-                request.setBodyStream(bodyStream);
 
+                httpInputStream = new HTTPInputStream(inputStream, contentLength);
+                request.setBodyStream(httpInputStream);
+
+                
                 response = new HTTPResponse();
                 HTTPOutputStream hos = new HTTPOutputStream(socket.getOutputStream(), response);
                 response.setOutputStream(hos);
@@ -81,7 +83,7 @@ public class HTTPWorkerThread implements Runnable {
 
                 try {
                     // Drain up to 1MB of ignored body data. If it's more, kill the socket.
-                    bodyStream.drain(1024 * 1024);
+                    httpInputStream.drain(1024 * 1024);
                 } catch (IOException e) {
                     System.err.println("Closing connection: " + e.getMessage());
                     break;

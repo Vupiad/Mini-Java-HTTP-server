@@ -8,8 +8,11 @@ import java.io.InputStream;
  * This is critical for HTTP/1.1 Keep-Alive connections.
  */
 public class HTTPInputStream extends InputStream {
+    private static final int DRAIN_BUFFER_SIZE = 8192;
+    
     private final InputStream delegate;
     private long remaining;
+    private byte[] drainBuffer; // Lazily initialized and reused to reduce GC pressure
 
     public HTTPInputStream(InputStream delegate, long contentLength) {
         // If content length is negative, default to 0 to prevent infinite reads
@@ -54,7 +57,9 @@ public class HTTPInputStream extends InputStream {
 
     /**
      * Pulls and discards the remaining bytes in the body.
-     * * @param maxDrainBytes The security limit to prevent draining massive payloads.
+     * Reuses an instance buffer to reduce GC pressure on Keep-Alive connections.
+     * 
+     * @param maxDrainBytes The security limit to prevent draining massive payloads.
      * @return The number of bytes drained.
      * @throws IOException If the remaining bytes exceed the max drain limit.
      */
@@ -66,12 +71,15 @@ public class HTTPInputStream extends InputStream {
             throw new IOException("Too many bytes left to drain: " + remaining + ". Socket must be closed.");
         }
 
-        int totalDrained = 0;
-        byte[] garbage = new byte[8192];
+        // Lazily initialize the drain buffer on first use
+        if (drainBuffer == null) {
+            drainBuffer = new byte[DRAIN_BUFFER_SIZE];
+        }
 
+        int totalDrained = 0;
         while (remaining > 0) {
-            int toRead = (int) Math.min(remaining, garbage.length);
-            int bytesRead = delegate.read(garbage, 0, toRead);
+            int toRead = (int) Math.min(remaining, drainBuffer.length);
+            int bytesRead = delegate.read(drainBuffer, 0, toRead);
 
             if (bytesRead == -1) break; // Socket closed early
 
