@@ -1,7 +1,7 @@
-package src.main.server.internal;
+package src.main.java.server.internal;
 
-import src.main.server.HTTPListenerConfiguration;
-import src.main.server.HTTPServerConfiguration;
+import src.main.java.server.HTTPListenerConfiguration;
+import src.main.java.server.HTTPServerConfiguration;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;

@@ -1,6 +1,6 @@
-package src.main.server;
+package src.main.java.server;
 
-import src.main.server.internal.HTTPServerThread;
+import src.main.java.server.internal.HTTPServerThread;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;

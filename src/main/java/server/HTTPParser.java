@@ -1,4 +1,4 @@
-package src.main.server;
+package src.main.java.server;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -8,7 +8,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class HTTPParser {
-    // Approach 3: Common header names - interned for reuse across requests
+    //Common header names - interned for reuse across requests
     private static final Map<String, String> COMMON_HEADERS = new HashMap<>();
     static {
         String[] headers = {
@@ -99,7 +99,7 @@ public class HTTPParser {
     }
 
     /**
-     * Approach 1: Parse request line directly from bytes without split() or string manipulation
+     * Parse request line directly from bytes without split() or string manipulation
      */
     private static void parseRequestLine(HTTPRequest request, byte[] buffer, int start, int end) throws IOException {
         // Find first space (method end)

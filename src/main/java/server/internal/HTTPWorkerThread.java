@@ -1,11 +1,10 @@
-package src.main.server.internal;
+package src.main.java.server.internal;
 
-import src.main.server.*;
-import src.main.server.io.HTTPInputStream;
-import src.main.server.io.HTTPOutputStream;
+import src.main.java.server.*;
+import src.main.java.server.io.HTTPInputStream;
+import src.main.java.server.io.HTTPOutputStream;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.io.PushbackInputStream;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
@@ -48,7 +47,7 @@ public class HTTPWorkerThread implements Runnable {
                     break;
                 }
 
-                // 3. Worker orchestrates the streams
+
                 long contentLength = parseContentLength(request);
 
                 httpInputStream = new HTTPInputStream(inputStream, contentLength);
@@ -59,25 +58,25 @@ public class HTTPWorkerThread implements Runnable {
                 HTTPOutputStream hos = new HTTPOutputStream(socket.getOutputStream(), response);
                 response.setOutputStream(hos);
 
-                // 4. Pass control to your Business Logic (Handler)
+
                 state = State.Process;
                 try {
                     config.getHandler().handle(request, response);
                 } catch (Exception e) {
-                    // Catch unhandled errors in your web app to prevent crashing the worker
+
                     handleServerError(response);
                 }
 
-                // 5. Finalize the response (This guarantees headers/body are flushed)
+
                 state = State.Write;
                 response.close();
 
-                // 6. Check Keep-Alive requirements
+
                 if (!shouldKeepAlive(request, response)) {
                     break; // Exit loop, try-with-resources will close the socket
                 }
 
-                // 7. Prepare for the next request
+
                 state = State.KeepAlive;
                 socket.setSoTimeout(config.getKeepAliveTimeout());
 

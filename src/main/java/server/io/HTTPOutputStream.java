@@ -1,4 +1,4 @@
-package src.main.server.io;
+package src.main.java.server.io;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -6,7 +6,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import src.main.server.HTTPResponse; // Assuming your response is here
+import src.main.java.server.HTTPResponse; // Assuming your response is here
 
 public class HTTPOutputStream extends OutputStream {
     // Priority 1: Cache commonly used byte arrays (UTF-8 encoded string literals)

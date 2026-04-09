@@ -1,6 +1,6 @@
-package src.main.server;
+package src.main.java.server;
 
-import src.main.server.io.HTTPOutputStream;
+import src.main.java.server.io.HTTPOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;

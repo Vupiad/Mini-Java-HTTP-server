@@ -1,7 +1,6 @@
-package src.main.server;
+package src.main.java.server;
 
 import java.io.InputStream;
-import java.net.URI;
 import java.util.*;
 
 public class HTTPRequest {

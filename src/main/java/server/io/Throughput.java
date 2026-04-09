@@ -1,4 +1,4 @@
-package src.main.server.io;
+package src.main.java.server.io;
 
 public class Throughput {
     private final long readThroughputDelay;

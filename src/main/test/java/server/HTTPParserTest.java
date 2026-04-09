@@ -1,9 +1,9 @@
-package src.main.test.server;
+package src.main.test.java.server;
 
 
 import org.junit.jupiter.api.Test;
-import src.main.server.HTTPRequest;
-import src.main.server.HTTPParser;
+import src.main.java.server.HTTPRequest;
+import src.main.java.server.HTTPParser;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;

@@ -1,6 +1,5 @@
-package src.main.server.utils;
+package src.main.java.server.utils;
 import java.util.HashMap;
-import java.util.Map;
 
 public class CaseInsensitiveMap extends HashMap<String, String>{
     @Override

@@ -1,9 +1,7 @@
-package src.main.server;
+package src.main.java.server;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.security.PrivateKey;
-import java.security.cert.Certificate;
 
 public class HTTPListenerConfiguration {
     private final InetAddress bindAddress;

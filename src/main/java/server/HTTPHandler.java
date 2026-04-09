@@ -1,4 +1,4 @@
-package src.main.server;
+package src.main.java.server;
 
 @FunctionalInterface
 public interface HTTPHandler {
